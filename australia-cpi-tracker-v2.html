@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AU CPI Tracker V2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0d1b2e;
+  --surface: #132038;
+  --border:  #1e3050;
+  --yellow:  #e8c547;
+  --blue:    #5b9cf6;
+  --text:    #e4e8f0;
+  --muted:   #7a8499;
+  --card:    #162236;
+  --green:   #4ecb8d;
+  --red:     #f06060;
+  --pink:    #e91e8c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:14px}
+
+/* HEADER */
+.header{display:flex;align-items:center;gap:12px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:11px}
+.logo-wrap{width:42px;height:42px;flex-shrink:0;border-radius:8px;overflow:hidden}
+.logo-wrap img{width:100%;height:100%;display:block}
+.header-text{flex:1}
+.header-text h1{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;letter-spacing:-.4px;color:var(--yellow);line-height:1}
+.header-text span{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.5px;display:block;margin-top:2px}
+.header-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.btn-update{background:var(--pink);border:none;color:#fff;font-family:'DM Mono',monospace;font-size:10px;font-weight:500;padding:6px 12px;border-radius:5px;cursor:pointer;letter-spacing:.5px;white-space:nowrap;box-shadow:0 0 12px rgba(233,30,140,.35);transition:background .15s,opacity .15s}
+.btn-update:hover{background:#ff2fa0}
+.btn-update:disabled{opacity:.5;cursor:default}
+#update-status{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:right;max-width:170px;line-height:1.4}
+#update-status.ok{color:var(--green)}
+#update-status.err{color:var(--red)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.stat-card.hero-yellow{border-color:var(--yellow);box-shadow:0 0 16px rgba(232,197,71,.1)}
+.stat-card.hero-blue{border-color:var(--blue);box-shadow:0 0 16px rgba(91,156,246,.1)}
+.stat-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;font-family:'DM Mono',monospace}
+.stat-value-hero{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;line-height:1;letter-spacing:-1px}
+.stat-sub{font-size:9px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace}
+.c-yellow{color:var(--yellow)}
+.c-blue{color:var(--blue)}
+
+/* CONTROLS */
+.controls{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:11px;margin-bottom:9px}
+.preset-section-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:5px}
+.preset-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:4px 9px;border-radius:4px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{background:rgba(232,197,71,.12);border-color:var(--yellow);color:var(--yellow)}
+.btn.active{background:var(--yellow);border-color:var(--yellow);color:#000;font-weight:600}
+.btn.mode-btn{border-color:var(--blue);color:var(--blue)}
+.btn.mode-btn.active{background:var(--blue);border-color:var(--blue);color:#000}
+.btn.mode-btn:hover{background:rgba(91,156,246,.15)}
+.slider-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)}
+.slider-group label{display:block;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:3px;font-family:'DM Mono',monospace}
+.slider-val span{font-family:'Syne',sans-serif;font-size:13px;color:var(--yellow);display:block;margin-bottom:4px}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--yellow);cursor:pointer;border:2px solid var(--bg)}
+select.quarter-select{width:100%;margin-top:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:10px;padding:4px 24px 4px 8px;border-radius:4px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a8499'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+select.quarter-select:focus{border-color:var(--yellow)}
+select.quarter-select option{background:#162236;color:var(--text)}
+
+/* SECTION TOGGLE */
+.section-header{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:6px 6px 0 0;padding:8px 12px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:background .15s}
+.section-header:hover{background:rgba(91,156,246,.08);border-color:var(--blue)}
+.section-header.collapsed{border-radius:6px;margin-bottom:9px}
+.section-title{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--blue);font-weight:500}
+.section-hint{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)}
+#table-section{overflow:hidden;transition:max-height .25s ease;max-height:500px}
+#table-section.collapsed{max-height:0}
+
+/* TABLE */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;margin-bottom:9px;max-height:220px;overflow-y:auto}
+.table-wrap::-webkit-scrollbar{width:4px}
+.table-wrap::-webkit-scrollbar-track{background:var(--card)}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface);position:sticky;top:0;z-index:2}
+th{padding:6px 8px;text-align:left;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500}
+th.r,td.r{text-align:right}
+th.c-yellow{color:var(--yellow)}
+th.c-blue{color:var(--blue)}
+td{padding:4px 8px;font-family:'DM Mono',monospace;font-size:11px;border-bottom:1px solid rgba(30,48,80,.5)}
+tr:last-child td{border-bottom:none}
+tr.summary-row:hover td{background:rgba(255,255,255,.02);cursor:pointer}
+.td-q{color:var(--muted)}
+.td-y{color:var(--yellow)}
+.td-b{color:var(--blue)}
+.td-yc{color:var(--yellow);font-weight:500}
+.td-bc{color:var(--blue);font-weight:500}
+.bc{width:56px}
+.bb{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.bf-y{height:100%;border-radius:2px;background:var(--yellow)}
+.bf-b{height:100%;border-radius:2px;background:var(--blue)}
+.toggle-cell{width:18px;color:var(--muted);font-size:10px;text-align:center;cursor:pointer}
+.toggle-cell.open{color:var(--yellow)}
+tr.detail-row td{padding:0;background:rgba(13,27,46,.7);border-bottom:1px solid rgba(30,48,80,.4)}
+.detail-inner{padding:8px 10px 10px 24px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);display:grid;grid-template-columns:repeat(4,1fr);gap:5px 10px}
+.di{display:flex;flex-direction:column;gap:2px}
+.di-label{font-size:8px;text-transform:uppercase;letter-spacing:.7px;color:#3a4560}
+.di-val{font-size:11px;color:var(--text)}
+
+/* CHART */
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px}
+.chart-legend{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;font-family:'DM Mono',monospace;display:flex;gap:14px;flex-wrap:wrap}
+.ld{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.ld-line{display:inline-block;width:14px;height:2px;border-radius:1px;margin-right:4px;vertical-align:middle}
+canvas{width:100%!important;display:block}
+
+.source-note{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:8px;text-align:right}
+.source-note a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-wrap">
+    <img src="data:image/png;base64,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" alt="Logo">
+  </div>
+  <div class="header-text">
+    <h1>AU CPI TRACKER V2</h1>
+    <span>ABS · ALL GROUPS &amp; TRANSPORT GROUP · WEIGHTED AVG 8 CAPITAL CITIES · BASE 2011–12 = 100</span>
+  </div>
+  <div class="header-right">
+    <button class="btn-update" id="btn-update" onclick="fetchLatestCPI()">↻ UPDATE CPI</button>
+    <div id="update-status">Last data: Dec 2025</div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat-card hero-yellow">
+    <div class="stat-label">All Groups CPI</div>
+    <div class="stat-value-hero c-yellow" id="stat-total-all">—</div>
+    <div class="stat-sub" id="stat-period-all">cumulative change</div>
+  </div>
+  <div class="stat-card hero-blue">
+    <div class="stat-label">Transport CPI</div>
+    <div class="stat-value-hero c-blue" id="stat-total-trn">—</div>
+    <div class="stat-sub" id="stat-period-trn">cumulative change</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="preset-row" style="margin-bottom:8px;align-items:center;gap:8px">
+    <span class="preset-section-label" style="margin-bottom:0">Mode:</span>
+    <button class="btn mode-btn active" id="mode-rolling" onclick="setMode('rolling')">Rolling</button>
+    <button class="btn mode-btn" id="mode-fy" onclick="setMode('fy')">Financial Year</button>
+  </div>
+  <div class="preset-row">
+    <button class="btn period-btn" id="btn-p1" onclick="setPeriod(1)">1 Yr</button>
+    <button class="btn period-btn" id="btn-p2" onclick="setPeriod(2)">2 Yrs</button>
+    <button class="btn period-btn" id="btn-p3" onclick="setPeriod(3)">3 Yrs</button>
+    <button class="btn period-btn" id="btn-p4" onclick="setPeriod(4)">4 Yrs</button>
+    <button class="btn period-btn active" id="btn-p5" onclick="setPeriod(5)">5 Yrs</button>
+    <button class="btn period-btn" id="btn-p10" onclick="setPeriod(10)">10 Yrs</button>
+    <button class="btn period-btn" id="btn-p20" onclick="setPeriod(20)">20 Yrs</button>
+  </div>
+  <div class="slider-row">
+    <div class="slider-group">
+      <label>Start Quarter</label>
+      <div class="slider-val"><span id="start-label">—</span></div>
+      <input type="range" id="slider-start" min="0" step="1" oninput="onSlider('start')">
+      <select class="quarter-select" id="select-start" onchange="onSelect('start')"></select>
+    </div>
+    <div class="slider-group">
+      <label>End Quarter</label>
+      <div class="slider-val"><span id="end-label">—</span></div>
+      <input type="range" id="slider-end" min="0" step="1" oninput="onSlider('end')">
+      <select class="quarter-select" id="select-end" onchange="onSelect('end')"></select>
+    </div>
+  </div>
+</div>
+
+<div class="section-header" id="section-toggle" onclick="toggleSection()">
+  <span class="section-title" id="section-title-text">▾ Quarterly Data</span>
+  <span class="section-hint" id="section-hint">tap to collapse</span>
+</div>
+<div id="table-section">
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:18px"></th>
+        <th>Quarter</th>
+        <th class="r c-yellow">All Grp Index</th>
+        <th class="r c-yellow">All Qtrly %</th>
+        <th class="r c-yellow">All Cum %</th>
+        <th class="r c-blue">Trn Index</th>
+        <th class="r c-blue">Trn Qtrly %</th>
+        <th class="r c-blue">Trn Cum %</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+</div>
+
+<div class="chart-wrap">
+  <div class="chart-legend">
+    <span><span class="ld" style="background:var(--yellow)"></span>All Groups Qtrly %</span>
+    <span><span class="ld-line" style="background:var(--yellow)"></span>All Groups Cum %</span>
+    <span><span class="ld" style="background:var(--blue)"></span>Transport Qtrly %</span>
+    <span><span class="ld-line" style="background:var(--blue)"></span>Transport Cum %</span>
+  </div>
+  <canvas id="chart" height="170"></canvas>
+</div>
+
+<div class="source-note">
+  Source: <a href="https://www.abs.gov.au/statistics/economy/price-indexes-and-inflation/consumer-price-index-australia" target="_blank">ABS</a> /
+  <a href="https://www.ato.gov.au/tax-rates-and-codes/consumer-price-index" target="_blank">ATO</a>
+  · Last data: Dec Qtr 2025 · Index base 2011–12 = 100
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// ALL GROUPS CPI  (2011-12 = 100, wtd avg 8 capitals)
+// ═══════════════════════════════════════════════════
+var ALL_RAW = [
+  [2004,12,81.5],
+  [2005,3,82.1],[2005,6,82.6],[2005,9,83.4],[2005,12,83.8],
+  [2006,3,84.5],[2006,6,85.9],[2006,9,86.7],[2006,12,86.6],
+  [2007,3,86.6],[2007,6,87.7],[2007,9,88.3],[2007,12,89.1],
+  [2008,3,90.3],[2008,6,91.6],[2008,9,92.7],[2008,12,92.4],
+  [2009,3,92.5],[2009,6,92.9],[2009,9,93.8],[2009,12,94.3],
+  [2010,3,95.2],[2010,6,95.8],[2010,9,96.5],[2010,12,96.9],
+  [2011,3,98.3],[2011,6,99.2],[2011,9,99.8],[2011,12,99.8],
+  [2012,3,99.9],[2012,6,100.4],[2012,9,101.8],[2012,12,102.0],
+  [2013,3,102.4],[2013,6,102.8],[2013,9,104.0],[2013,12,104.8],
+  [2014,3,105.4],[2014,6,105.9],[2014,9,106.4],[2014,12,106.6],
+  [2015,3,106.8],[2015,6,107.5],[2015,9,108.0],[2015,12,108.4],
+  [2016,3,108.2],[2016,6,108.6],[2016,9,109.4],[2016,12,110.0],
+  [2017,3,110.5],[2017,6,110.7],[2017,9,111.4],[2017,12,112.1],
+  [2018,3,112.6],[2018,6,113.0],[2018,9,113.5],[2018,12,114.1],
+  [2019,3,114.1],[2019,6,114.8],[2019,9,115.4],[2019,12,116.2],
+  [2020,3,116.6],[2020,6,114.4],[2020,9,116.2],[2020,12,117.2],
+  [2021,3,117.9],[2021,6,118.8],[2021,9,119.7],[2021,12,121.3],
+  [2022,3,123.9],[2022,6,126.1],[2022,9,128.4],[2022,12,130.8],
+  [2023,3,132.6],[2023,6,133.7],[2023,9,135.3],[2023,12,136.1],
+  [2024,3,137.4],[2024,6,138.8],[2024,9,139.1],[2024,12,139.4],
+  [2025,3,140.7],[2025,6,141.7],[2025,9,143.6],[2025,12,145.4]
+];
+
+// ═══════════════════════════════════════════════════
+// TRANSPORT CPI GROUP (2011-12 = 100, wtd avg 8 capitals)
+// ABS CPI Table 7 Transport group index
+// Covers: motor vehicles, fuel, maintenance, transport services
+// ═══════════════════════════════════════════════════
+var TRN_RAW = [
+  [2004,12,95.8],
+  [2005,3,97.2],[2005,6,99.1],[2005,9,102.3],[2005,12,100.8],
+  [2006,3,101.9],[2006,6,105.1],[2006,9,106.4],[2006,12,104.6],
+  [2007,3,104.3],[2007,6,105.8],[2007,9,107.1],[2007,12,109.4],
+  [2008,3,112.8],[2008,6,118.5],[2008,9,120.1],[2008,12,109.2],
+  [2009,3,106.8],[2009,6,108.4],[2009,9,111.6],[2009,12,113.8],
+  [2010,3,115.9],[2010,6,116.2],[2010,9,116.8],[2010,12,117.6],
+  [2011,3,119.4],[2011,6,120.8],[2011,9,101.0],[2011,12,100.2],
+  [2012,3,101.6],[2012,6,102.4],[2012,9,103.9],[2012,12,103.2],
+  [2013,3,103.9],[2013,6,104.1],[2013,9,106.1],[2013,12,106.3],
+  [2014,3,107.0],[2014,6,107.6],[2014,9,108.1],[2014,12,106.8],
+  [2015,3,104.4],[2015,6,104.8],[2015,9,103.8],[2015,12,103.2],
+  [2016,3,101.8],[2016,6,102.8],[2016,9,103.4],[2016,12,104.3],
+  [2017,3,105.2],[2017,6,105.3],[2017,9,106.5],[2017,12,108.2],
+  [2018,3,109.2],[2018,6,111.0],[2018,9,113.1],[2018,12,110.3],
+  [2019,3,109.4],[2019,6,110.7],[2019,9,110.9],[2019,12,111.5],
+  [2020,3,111.1],[2020,6,104.4],[2020,9,107.6],[2020,12,109.4],
+  [2021,3,110.9],[2021,6,113.6],[2021,9,115.8],[2021,12,120.3],
+  [2022,3,124.5],[2022,6,131.0],[2022,9,133.3],[2022,12,132.7],
+  [2023,3,133.1],[2023,6,133.5],[2023,9,135.0],[2023,12,133.8],
+  [2024,3,133.9],[2024,6,135.2],[2024,9,134.9],[2024,12,133.4],
+  [2025,3,134.2],[2025,6,135.0],[2025,9,136.5],[2025,12,137.8]
+];
+
+var MN = {3:'Mar',6:'Jun',9:'Sep',12:'Dec'};
+
+// Build combined DATA array
+var DATA = [];
+for (var i = 1; i < ALL_RAW.length; i++) {
+  var yr=ALL_RAW[i][0], mo=ALL_RAW[i][1];
+  var aIdx=ALL_RAW[i][2], aPrev=ALL_RAW[i-1][2];
+  var aPct=(aIdx-aPrev)/aPrev*100;
+  var tIdx=null, tPct=null;
+  for (var j=1;j<TRN_RAW.length;j++) {
+    if(TRN_RAW[j][0]===yr&&TRN_RAW[j][1]===mo) {
+      tIdx=TRN_RAW[j][2];
+      for(var k=0;k<TRN_RAW.length;k++){
+        if(TRN_RAW[k][0]===ALL_RAW[i-1][0]&&TRN_RAW[k][1]===ALL_RAW[i-1][1]){
+          tPct=(tIdx-TRN_RAW[k][2])/TRN_RAW[k][2]*100; break;
+        }
+      }
+      break;
+    }
+  }
+  DATA.push({yr:yr,mo:mo,aIdx:aIdx,aPct:aPct,tIdx:tIdx,tPct:tPct,label:MN[mo]+' '+yr});
+}
+
+// STATE
+var startIdx=0, endIdx=DATA.length-1;
+var openRows={};
+var currentMode='rolling', currentPeriod=5;
+var currentRows=[];
+var sectionOpen=true;
+
+function clearPeriodBtns(){
+  var b=document.querySelectorAll('.period-btn');
+  for(var i=0;i<b.length;i++) b[i].classList.remove('active');
+}
+function syncControls(){
+  document.getElementById('slider-start').value=startIdx;
+  document.getElementById('slider-end').value=endIdx;
+  document.getElementById('select-start').value=startIdx;
+  document.getElementById('select-end').value=endIdx;
+  document.getElementById('start-label').textContent=DATA[startIdx].label;
+  document.getElementById('end-label').textContent=DATA[endIdx].label;
+}
+function getFYBounds(fyEnd){
+  var si=-1,ei=-1;
+  for(var i=0;i<DATA.length;i++){
+    if(DATA[i].yr===fyEnd-1&&DATA[i].mo===9) si=i;
+    if(DATA[i].yr===fyEnd&&DATA[i].mo===6) ei=i;
+  }
+  return {si:si,ei:ei};
+}
+function lastCompleteFY(){
+  for(var fy=2026;fy>=2006;fy--){var b=getFYBounds(fy);if(b.si>=0&&b.ei>=0) return fy;}
+  return 2025;
+}
+function setMode(mode){
+  currentMode=mode;
+  document.getElementById('mode-rolling').classList.toggle('active',mode==='rolling');
+  document.getElementById('mode-fy').classList.toggle('active',mode==='fy');
+  applyPeriod(currentPeriod);
+}
+function setPeriod(years){
+  currentPeriod=years;
+  clearPeriodBtns();
+  var pb=document.getElementById('btn-p'+years);
+  if(pb) pb.classList.add('active');
+  applyPeriod(years);
+}
+function applyPeriod(years){
+  openRows={};
+  if(currentMode==='rolling'){
+    endIdx=DATA.length-1;
+    startIdx=Math.max(0,endIdx-years*4+1);
+  } else {
+    var latestFY=lastCompleteFY();
+    var startFY=latestFY-years+1;
+    var sb=getFYBounds(startFY),eb=getFYBounds(latestFY);
+    startIdx=sb.si>=0?sb.si:0;
+    endIdx=eb.ei>=0?eb.ei:DATA.length-1;
+  }
+  syncControls();
+  updateDisplay();
+}
+function onSlider(which){
+  clearPeriodBtns();
+  document.getElementById('mode-rolling').classList.remove('active');
+  document.getElementById('mode-fy').classList.remove('active');
+  openRows={};
+  if(which==='start'){
+    startIdx=parseInt(document.getElementById('slider-start').value,10);
+    if(startIdx>endIdx) endIdx=startIdx;
+  } else {
+    endIdx=parseInt(document.getElementById('slider-end').value,10);
+    if(endIdx<startIdx) startIdx=endIdx;
+  }
+  syncControls(); updateDisplay();
+}
+function onSelect(which){
+  clearPeriodBtns();
+  document.getElementById('mode-rolling').classList.remove('active');
+  document.getElementById('mode-fy').classList.remove('active');
+  openRows={};
+  if(which==='start'){
+    startIdx=parseInt(document.getElementById('select-start').value,10);
+    if(startIdx>endIdx) endIdx=startIdx;
+  } else {
+    endIdx=parseInt(document.getElementById('select-end').value,10);
+    if(endIdx<startIdx) startIdx=endIdx;
+  }
+  syncControls(); updateDisplay();
+}
+function toggleDetail(di){
+  openRows[di]=!openRows[di];
+  renderTable(currentRows);
+}
+function toggleSection(){
+  sectionOpen=!sectionOpen;
+  var sec=document.getElementById('table-section');
+  var hdr=document.getElementById('section-toggle');
+  var ttxt=document.getElementById('section-title-text');
+  var hint=document.getElementById('section-hint');
+  if(sectionOpen){sec.classList.remove('collapsed');hdr.classList.remove('collapsed');ttxt.textContent='\u25be Quarterly Data';hint.textContent='tap to collapse';}
+  else{sec.classList.add('collapsed');hdr.classList.add('collapsed');ttxt.textContent='\u25b8 Quarterly Data';hint.textContent='tap to expand';}
+}
+
+function updateDisplay(){
+  var slice=DATA.slice(startIdx,endIdx+1);
+  var aBase=slice[0].aIdx;
+  var tBase=slice[0].tIdx;
+  var rows=[];
+  for(var i=0;i<slice.length;i++){
+    var aCum=(slice[i].aIdx/aBase-1)*100;
+    var tCum=tBase&&slice[i].tIdx?(slice[i].tIdx/tBase-1)*100:null;
+    rows.push({
+      yr:slice[i].yr,mo:slice[i].mo,
+      aIdx:slice[i].aIdx,aPct:slice[i].aPct,aCum:aCum,
+      tIdx:slice[i].tIdx,tPct:slice[i].tPct,tCum:tCum,
+      label:slice[i].label,dataIdx:startIdx+i
+    });
+  }
+  currentRows=rows;
+  var lastAll=rows[rows.length-1];
+  var lastTrn=rows[rows.length-1];
+  document.getElementById('stat-total-all').textContent=lastAll.aCum.toFixed(1)+'%';
+  document.getElementById('stat-period-all').textContent=slice[0].label+' \u2013 '+slice[slice.length-1].label;
+  document.getElementById('stat-total-trn').textContent=lastTrn.tCum!==null?lastTrn.tCum.toFixed(1)+'%':'—';
+  document.getElementById('stat-period-trn').textContent=slice[0].label+' \u2013 '+slice[slice.length-1].label;
+  renderTable(rows);
+  drawChart(rows);
+}
+
+function fmt(v,dp){
+  if(v===null||v===undefined) return '—';
+  return (v>=0?'+':'')+v.toFixed(dp!==undefined?dp:2)+'%';
+}
+
+function renderTable(rows){
+  var maxA=0,maxT=0;
+  for(var i=0;i<rows.length;i++){
+    if(Math.abs(rows[i].aPct)>maxA) maxA=Math.abs(rows[i].aPct);
+    if(rows[i].tPct!==null&&Math.abs(rows[i].tPct)>maxT) maxT=Math.abs(rows[i].tPct);
+  }
+  var tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    var isOpen=!!openRows[r.dataIdx];
+    var tr=document.createElement('tr');
+    tr.className='summary-row';
+    (function(di){tr.onclick=function(){toggleDetail(di);};})(r.dataIdx);
+    var bpA=maxA>0?Math.abs(r.aPct)/maxA*100:0;
+    var bpT=maxT>0&&r.tPct!==null?Math.abs(r.tPct)/maxT*100:0;
+    tr.innerHTML=
+      '<td class="toggle-cell'+(isOpen?' open':'')+'">' +(isOpen?'▾':'▸')+'</td>'+
+      '<td class="td-q">'+r.label+'</td>'+
+      '<td class="td-y r">'+r.aIdx.toFixed(1)+'</td>'+
+      '<td class="td-y r">'+fmt(r.aPct)+'</td>'+
+      '<td class="td-yc r">'+r.aCum.toFixed(2)+'%</td>'+
+      '<td class="td-b r">'+( r.tIdx?r.tIdx.toFixed(1):'—')+'</td>'+
+      '<td class="td-b r">'+fmt(r.tPct)+'</td>'+
+      '<td class="td-bc r">'+( r.tCum!==null?r.tCum.toFixed(2)+'%':'—')+'</td>';
+    tbody.appendChild(tr);
+    if(isOpen){
+      var annA=null,annT=null;
+      for(var j=0;j<DATA.length;j++){
+        if(DATA[j].yr===r.yr-1&&DATA[j].mo===r.mo){
+          annA=(r.aIdx-DATA[j].aIdx)/DATA[j].aIdx*100;
+          if(r.tIdx&&DATA[j].tIdx) annT=(r.tIdx-DATA[j].tIdx)/DATA[j].tIdx*100;
+        }
+      }
+      var dtr=document.createElement('tr');
+      dtr.className='detail-row';
+      dtr.innerHTML='<td colspan="8"><div class="detail-inner">'+
+        '<div class="di"><span class="di-label">All Grp Index</span><span class="di-val">'+r.aIdx.toFixed(1)+'</span></div>'+
+        '<div class="di"><span class="di-label">All Annual %</span><span class="di-val">'+fmt(annA)+'</span></div>'+
+        '<div class="di"><span class="di-label">All Cum %</span><span class="di-val">'+r.aCum.toFixed(2)+'%</span></div>'+
+        '<div class="di"><span class="di-label">Trn Index</span><span class="di-val">'+( r.tIdx?r.tIdx.toFixed(1):'—')+'</span></div>'+
+        '<div class="di"><span class="di-label">Trn Qtrly %</span><span class="di-val">'+fmt(r.tPct)+'</span></div>'+
+        '<div class="di"><span class="di-label">Trn Annual %</span><span class="di-val">'+fmt(annT)+'</span></div>'+
+        '<div class="di"><span class="di-label">Trn Cum %</span><span class="di-val">'+( r.tCum!==null?r.tCum.toFixed(2)+'%':'—')+'</span></div>'+
+        '<div class="di"><span class="di-label">Quarter</span><span class="di-val">'+r.label+'</span></div>'+
+        '</div></td>';
+      tbody.appendChild(dtr);
+    }
+  }
+}
+
+function drawChart(rows){
+  var canvas=document.getElementById('chart');
+  var ctx=canvas.getContext('2d');
+  var dpr=window.devicePixelRatio||1;
+  var W=(canvas.parentElement.offsetWidth-24)||300;
+  var H=170;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  var n=rows.length;
+  if(n===0) return;
+
+  var pL=38,pR=44,pT=10,pB=26;
+  var cW=W-pL-pR, cH=H-pT-pB;
+
+  // compute ranges — unified left axis for both quarterly % series
+  var qMin=0,qMax=0.1;
+  var aCumMax=0.01,tCumMax=0.01;
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].aPct<qMin) qMin=rows[i].aPct;
+    if(rows[i].aPct>qMax) qMax=rows[i].aPct;
+    if(rows[i].tPct!==null){
+      if(rows[i].tPct<qMin) qMin=rows[i].tPct;
+      if(rows[i].tPct>qMax) qMax=rows[i].tPct;
+    }
+    if(rows[i].aCum>aCumMax) aCumMax=rows[i].aCum;
+    if(rows[i].tCum!==null&&rows[i].tCum>tCumMax) tCumMax=rows[i].tCum;
+  }
+  var qPad=(qMax-qMin)*0.18+0.3;
+  qMin-=qPad; qMax+=qPad;
+  var cumMax=Math.max(aCumMax,tCumMax)*1.10+0.5;
+
+  // shared zero pixel
+  var y0px=pT+cH*(qMax/(qMax-qMin));
+  var pixPerPct=cumMax>0?(y0px-pT)/cumMax*0.92:1;
+
+  function yQ(v){return pT+cH-(v-qMin)/(qMax-qMin)*cH;}
+  function yC(v){return y0px-v*pixPerPct;}
+  function xP(i){return pL+(n<=1?cW/2:i/(n-1)*cW);}
+  var bW=Math.max(1.5,cW/Math.max(n,1)*0.45);
+  var bHalf=bW/2;
+
+  // grid
+  var gridVals=[];
+  for(var g=0;g<=5;g++) gridVals.push(qMin+(qMax-qMin)*g/5);
+  // ensure 0 is present
+  var ci=0,cd=Math.abs(gridVals[0]);
+  for(var g=1;g<gridVals.length;g++){if(Math.abs(gridVals[g])<cd){cd=Math.abs(gridVals[g]);ci=g;}}
+  gridVals[ci]=0;
+
+  ctx.font='8px DM Mono,monospace';
+  for(var g=0;g<gridVals.length;g++){
+    var v=gridVals[g], y=yQ(v), isZ=(v===0);
+    ctx.strokeStyle=isZ?'rgba(122,132,153,.3)':'rgba(30,48,80,.8)';
+    ctx.lineWidth=isZ?1:.5;
+    ctx.setLineDash(isZ?[4,4]:[]);
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(W-pR,y);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.textAlign='right';
+    ctx.fillStyle=isZ?'rgba(122,132,153,.8)':v>0?'rgba(232,197,71,.75)':'rgba(91,156,246,.75)';
+    ctx.fillText(v.toFixed(1)+'%',pL-4,y+3);
+  }
+
+  // All Groups bars (yellow), offset left
+  for(var i=0;i<rows.length;i++){
+    var x=xP(i), y=yQ(rows[i].aPct), h=Math.abs(y-y0px);
+    ctx.fillStyle='rgba(232,197,71,.80)';
+    ctx.fillRect(x-bW+1, rows[i].aPct<0?y0px:y, bW-1, Math.max(h,1));
+  }
+
+  // Transport bars (blue), offset right
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].tPct===null) continue;
+    var x=xP(i), y=yQ(rows[i].tPct), h=Math.abs(y-y0px);
+    ctx.fillStyle='rgba(91,156,246,.75)';
+    ctx.fillRect(x+1, rows[i].tPct<0?y0px:y, bW-1, Math.max(h,1));
+  }
+
+  // All Groups cumulative line — yellow
+  ctx.strokeStyle='#e8c547'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  for(var i=0;i<rows.length;i++){var x=xP(i),y=yC(rows[i].aCum);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+  for(var i=0;i<rows.length;i++){ctx.beginPath();ctx.arc(xP(i),yC(rows[i].aCum),2,0,Math.PI*2);ctx.fillStyle='#e8c547';ctx.fill();}
+
+  // Transport cumulative line — blue
+  ctx.strokeStyle='#5b9cf6'; ctx.lineWidth=2;
+  ctx.beginPath();
+  var tStarted=false;
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].tCum===null) continue;
+    var x=xP(i),y=yC(rows[i].tCum);
+    if(!tStarted){ctx.moveTo(x,y);tStarted=true;}else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].tCum===null) continue;
+    ctx.beginPath();ctx.arc(xP(i),yC(rows[i].tCum),2,0,Math.PI*2);ctx.fillStyle='#5b9cf6';ctx.fill();
+  }
+
+  // Right axis — cumulative (shared scale)
+  ctx.fillStyle='rgba(200,200,200,.6)'; ctx.font='8px DM Mono,monospace'; ctx.textAlign='left';
+  for(var g=0;g<=4;g++){
+    var v=cumMax*g/4, y=yC(v);
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=.5; ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(W-pR,y);ctx.lineTo(W-pR+3,y);ctx.stroke();
+    ctx.fillText(v.toFixed(0)+'%',W-pR+5,y+3);
+  }
+
+  // axis labels
+  ctx.save();ctx.font='7px DM Mono,monospace';ctx.fillStyle='rgba(122,132,153,.5)';ctx.textAlign='center';
+  ctx.translate(9,pT+cH/2);ctx.rotate(-Math.PI/2);ctx.fillText('QTR %',0,0);ctx.restore();
+  ctx.save();ctx.font='7px DM Mono,monospace';ctx.fillStyle='rgba(200,200,200,.4)';ctx.textAlign='center';
+  ctx.translate(W-7,pT+cH/2);ctx.rotate(Math.PI/2);ctx.fillText('CUM %',0,0);ctx.restore();
+
+  // X labels
+  var every=n<=8?1:n<=20?2:n<=40?4:n<=60?6:8;
+  ctx.fillStyle='rgba(122,132,153,.75)'; ctx.font='8px DM Mono,monospace'; ctx.textAlign='center';
+  for(var i=0;i<rows.length;i++){
+    if(i%every===0||i===n-1) ctx.fillText(MN[rows[i].mo]+"'"+String(rows[i].yr).slice(-2),xP(i),H-pB+12);
+  }
+}
+
+// LIVE UPDATE
+function fetchLatestCPI(){
+  var btn=document.getElementById('btn-update');
+  var status=document.getElementById('update-status');
+  btn.disabled=true; btn.textContent='↻ Fetching\u2026';
+  status.className=''; status.textContent='Checking ABS for latest data\u2026';
+  var prompt='Search the ABS website for the most recently published quarterly CPI figures for Australia. '+
+    'I need TWO index values on the 2011-12=100 base: (1) All Groups CPI weighted average of 8 capital cities, and (2) Transport group CPI weighted average of 8 capital cities. '+
+    'Reply ONLY with a JSON object, no markdown: '+
+    '{"quarter":"Mar 2026","all_index":146.2,"all_pct":0.5,"trn_index":138.5,"trn_pct":0.5,"annual_all":3.2,"annual_trn":2.1} '+
+    'If most recent data is still Dec 2025 (all_index 145.4, trn_index 137.8), return that.';
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:300,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:prompt}]
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var text='';
+    if(data.content) for(var i=0;i<data.content.length;i++) if(data.content[i].type==='text') text+=data.content[i].text;
+    text=text.replace(/```[a-z]*\n?/gi,'').trim();
+    var res=JSON.parse(text);
+    if(!res.quarter||!res.all_index) throw new Error('Bad format');
+    var parts=res.quarter.split(' ');
+    var moMap={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+    var moNum=moMap[parts[0]]||3;
+    if(moNum<=3) moNum=3; else if(moNum<=6) moNum=6; else if(moNum<=9) moNum=9; else moNum=12;
+    var yr=parseInt(parts[1],10);
+    var exists=false;
+    for(var i=0;i<DATA.length;i++) if(DATA[i].yr===yr&&DATA[i].mo===moNum){exists=true;break;}
+    if(exists){
+      status.className='ok';
+      status.textContent='\u2713 Already current \u2014 '+res.quarter+' (All: '+res.all_index+' | Trn: '+res.trn_index+')';
+    } else {
+      ALL_RAW.push([yr,moNum,res.all_index]);
+      TRN_RAW.push([yr,moNum,res.trn_index]);
+      // rebuild DATA
+      DATA.length=0;
+      for(var i=1;i<ALL_RAW.length;i++){
+        var dyr=ALL_RAW[i][0],dmo=ALL_RAW[i][1],aIdx=ALL_RAW[i][2],aPrev=ALL_RAW[i-1][2];
+        var aPct=(aIdx-aPrev)/aPrev*100;
+        var tIdx=null,tPct=null;
+        for(var j=1;j<TRN_RAW.length;j++){
+          if(TRN_RAW[j][0]===dyr&&TRN_RAW[j][1]===dmo){
+            tIdx=TRN_RAW[j][2];
+            for(var k=0;k<TRN_RAW.length;k++){
+              if(TRN_RAW[k][0]===ALL_RAW[i-1][0]&&TRN_RAW[k][1]===ALL_RAW[i-1][1]){
+                tPct=(tIdx-TRN_RAW[k][2])/TRN_RAW[k][2]*100; break;
+              }
+            }
+            break;
+          }
+        }
+        DATA.push({yr:dyr,mo:dmo,aIdx:aIdx,aPct:aPct,tIdx:tIdx,tPct:tPct,label:MN[dmo]+' '+dyr});
+      }
+      document.getElementById('slider-start').max=DATA.length-1;
+      document.getElementById('slider-end').max=DATA.length-1;
+      var ss=document.getElementById('select-start'),se=document.getElementById('select-end');
+      ss.innerHTML=''; se.innerHTML='';
+      for(var i=0;i<DATA.length;i++){ss.appendChild(new Option(DATA[i].label,i));se.appendChild(new Option(DATA[i].label,i));}
+      status.className='ok';
+      status.textContent='\u2713 Updated! '+res.quarter+' | All: '+res.all_index+' ('+fmt(res.all_pct,1)+') | Trn: '+res.trn_index+' ('+fmt(res.trn_pct,1)+')';
+      applyPeriod(currentPeriod);
+    }
+  })
+  .catch(function(e){status.className='err';status.textContent='\u2717 Could not fetch: '+e.message;})
+  .finally(function(){btn.disabled=false;btn.textContent='\u21bb UPDATE CPI';});
+}
+
+function buildDropdowns(){
+  var ss=document.getElementById('select-start'),se=document.getElementById('select-end');
+  for(var i=0;i<DATA.length;i++){ss.appendChild(new Option(DATA[i].label,i));se.appendChild(new Option(DATA[i].label,i));}
+}
+
+function init(){
+  document.getElementById('slider-start').max=DATA.length-1;
+  document.getElementById('slider-end').max=DATA.length-1;
+  buildDropdowns();
+  setPeriod(5);
+}
+
+window.addEventListener('resize',function(){drawChart(currentRows);});
+init();
+</script>
+</body>
+</html>
